@@ -17,6 +17,8 @@ CLI and library for working with [UpBank](https://up.com.au) via its
 - [ ] Ping webhook
 - [ ] List webhook logs
 - [ ] Generate completion
+- [ ] Move raw API wrapper into `api` subdirectory and create nicer high-level
+      wrapper
 
 ## CLI
 
@@ -48,3 +50,10 @@ The other parts of the CLI are cool but I think the really useful bit will be
 being able to manage webhooks.
 
 ## Library
+
+Currently the library is just a raw wrapper around the API. There is nothing
+done to distill the API output into more idiomatic Go. For instance, the
+structures directly map to the JSON and are highly nested, which is
+unnecessarily difficult to work with because we can wrap them up into some nice
+Go types. In particular anything to do with money can probably be wrapped up
+into a `currency.Amount`and things like that.
