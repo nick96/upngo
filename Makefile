@@ -5,3 +5,6 @@ build:
 
 clean:
 	rm $(OUT_DIR)/*
+
+test:
+	go test -v ./...
