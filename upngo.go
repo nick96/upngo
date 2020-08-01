@@ -228,6 +228,15 @@ func (c *Client) Accounts(options ...accountsOption) (AccountsResponse, error) {
 	if err != nil {
 		return AccountsResponse{}, fmt.Errorf("failed to get accounts request: %w", err)
 	}
+
+	query := req.URL.Query()
+	for _, option := range options {
+		// Using `Add`, not `Set` is important because it meanst that if and
+		// option is supplied twice then both values are included in the query.
+		query.Add(option.name, option.value)
+	}
+	req.URL.RawQuery = query.Encode()
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return AccountsResponse{}, fmt.Errorf("failed to get accounts: %w", err)

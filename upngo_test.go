@@ -17,6 +17,7 @@ func newServerClientForURL(
 	url string,
 	status int,
 	expectedResponse interface{},
+	checks ...func(*http.Request),
 ) (*httptest.Server, *Client) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 		require.Equal(t, url, req.URL.Path)
@@ -24,6 +25,10 @@ func newServerClientForURL(
 		authzHeader := req.Header.Get("Authorization")
 		expectedHeader := fmt.Sprintf("Bearer %s", token)
 		require.Equal(t, expectedHeader, authzHeader)
+
+		for _, check := range checks {
+			check(req)
+		}
 
 		rw.WriteHeader(status)
 
@@ -118,7 +123,16 @@ func TestAccountsNoPageSize(t *testing.T) {
 	}
 
 	token := "token"
-	server, client := newServerClientForURL(t, token, "/api/v1/accounts", http.StatusOK, expectedResponse)
+	server, client := newServerClientForURL(
+		t,
+		token,
+		"/api/v1/accounts",
+		http.StatusOK,
+		expectedResponse,
+		func (req *http.Request) {
+			require.Empty(t, req.URL.Query().Get("page[size]"))
+		},
+	)
 	defer server.Close()
 	accounts, err := client.Accounts()
 	require.NoError(t, err)
@@ -126,6 +140,54 @@ func TestAccountsNoPageSize(t *testing.T) {
 }
 
 func TestAccountsPageSize(t *testing.T) {
+	expectedResponse := AccountsResponse{
+		Data: []AccountsResource{
+			{
+				ID:   "id",
+				Type: "accounts",
+				Attributes: AttributesObject{
+					DisplayName: "test",
+					AccountType: AccountTypeSaver,
+					Balance: MoneyObject{
+						CurrencyCode:     "AUD",
+						Value:            "1.00",
+						ValueInBaseUnits: 100,
+					},
+					CreatedAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.Local),
+				},
+				Links: SelfLinkObject{
+					Self: "https://blahblahblah",
+				},
+				Relationships: RelationshipsObject{
+					Transactions: TransactionsObject{
+						Links: TransactionsLinksObject{
+							Related: "https:/blahblahblah",
+						},
+					},
+				},
+			},
+		},
+		Links: LinksObject{
+			Prev: "https:/blahblahblah",
+			Next: "https:/blahblahblah",
+		},
+	}
+
+	token := "token"
+	server, client := newServerClientForURL(
+		t,
+		token,
+		"/api/v1/accounts",
+		http.StatusOK,
+		expectedResponse,
+		func (req *http.Request) {
+			require.Equal(t, "10", req.URL.Query().Get("page[size]"))
+		},
+	)
+	defer server.Close()
+	accounts, err := client.Accounts(WithPageSize(10))
+	require.NoError(t, err)
+	require.Equal(t, expectedResponse, accounts)
 
 }
 
