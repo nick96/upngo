@@ -11,8 +11,15 @@ import (
 )
 
 func TestPingOk(t *testing.T) {
+	token := "token"
+
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		require.Equal(t, "/api/v1/utils/ping", req.URL.Path)
+		require.Equal(t, "/api/v1/util/ping", req.URL.Path)
+
+		authzHeader := req.Header.Get("Authorization")
+		expectedHeader := fmt.Sprintf("Bearer %s", token)
+		require.Equal(t, expectedHeader, authzHeader)
+
 		response, _ := json.Marshal(PingResponse{
 			Meta: PingResponseMeta{
 				ID:          "c0ee698b-6707-4d87-a1b3-80393f1f8571",
@@ -24,14 +31,14 @@ func TestPingOk(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := Client{token: "", baseURL: server.URL, client: server.Client()}
+	client := Client{token: token, baseURL: server.URL, client: server.Client()}
 	require.NoError(t, client.Ping())
 }
 
 func TestPingErr(t *testing.T) {
 	detail := "The request was not authenticated because no valid credential was found in the Authorization header, or the Authorization header was not present."
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		require.Equal(t, "/api/v1/utils/ping", req.URL.Path)
+		require.Equal(t, "/api/v1/util/ping", req.URL.Path)
 		rw.WriteHeader(http.StatusUnauthorized)
 		response, _ := json.Marshal(PingErrorResponse{
 			Errors: []ErrorObject{

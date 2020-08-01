@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
@@ -57,10 +58,15 @@ func NewClient(token string) *Client {
 
 // Ping pings the UpBank API and returns an error if there is an problem.
 func (c *Client) Ping() error {
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/api/v1/utils/ping", c.baseURL), nil)
+	url := fmt.Sprintf("%s/api/v1/util/ping", c.baseURL)
+	log.Printf("Sending request to %s", url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return err
 	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.token))
+
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return err

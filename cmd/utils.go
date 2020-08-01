@@ -24,6 +24,7 @@ func warn(msg string, args ...interface{}) {
 }
 
 func getToken() string {
+
 	// The token can either be in an env var or a keyring. If someone has
 	// set the env var they probably intend to do that over the keychain
 	// because it's useful for testing and stuff.
@@ -40,6 +41,7 @@ func getToken() string {
 		if err != nil {
 			abort("Failed to get UpBank token from keyring: %v", err)
 		}
+
 		token = keyringToken
 	}
 

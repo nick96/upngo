@@ -17,7 +17,7 @@ var pingCmd = &cobra.Command{
 		if err := client.Ping(); err != nil {
 			abort("UpBank ping failed: %v", err)
 		}
-		fmt.Printf("Successfully pinged UpBank ⚡")
+		fmt.Printf("Successfully pinged UpBank ⚡\n")
 	},
 }
 
