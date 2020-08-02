@@ -6,7 +6,7 @@ CLI and library for working with [UpBank](https://up.com.au) via its
 ## TODO
 
 - [x] Ping
-- [ ] List accounts
+- [x] List accounts
 - [ ] List transactions
 - [ ] Get specific account
 - [ ] Get specific transaction
