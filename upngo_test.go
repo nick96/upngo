@@ -2,12 +2,14 @@ package upngo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,11 +59,11 @@ func newServerClientForURL(
 func TestPingOk(t *testing.T) {
 	token := "token"
 	expectedResponse := PingResponse{
-			Meta: PingResponseMeta{
-				ID:          "c0ee698b-6707-4d87-a1b3-80393f1f8571",
-				StatusEmoji: "⚡️",
-			},
-		}
+		Meta: PingResponseMeta{
+			ID:          "c0ee698b-6707-4d87-a1b3-80393f1f8571",
+			StatusEmoji: "⚡️",
+		},
+	}
 	server, client := newServerClientForURL(t, token, "/api/v1/util/ping", http.StatusOK, expectedResponse)
 	defer server.Close()
 	require.NoError(t, client.Ping())
@@ -71,13 +73,13 @@ func TestPingErr(t *testing.T) {
 	token := "token"
 	detail := "The request was not authenticated because no valid credential was found in the Authorization header, or the Authorization header was not present."
 	expectedResponse := ErrorResponse{
-			Errors: []ErrorObject{
-				{
-					Status: "401",
-					Title:  "Not Authorized",
-					Detail: detail,
-				},
+		Errors: []ErrorObject{
+			{
+				Status: "401",
+				Title:  "Not Authorized",
+				Detail: detail,
 			},
+		},
 	}
 	server, client := newServerClientForURL(t, token, "/api/v1/util/ping", http.StatusUnauthorized, expectedResponse)
 	defer server.Close()
@@ -129,7 +131,7 @@ func TestAccountsNoPageSize(t *testing.T) {
 		"/api/v1/accounts",
 		http.StatusOK,
 		expectedResponse,
-		func (req *http.Request) {
+		func(req *http.Request) {
 			require.Empty(t, req.URL.Query().Get("page[size]"))
 		},
 	)
@@ -180,7 +182,7 @@ func TestAccountsPageSize(t *testing.T) {
 		"/api/v1/accounts",
 		http.StatusOK,
 		expectedResponse,
-		func (req *http.Request) {
+		func(req *http.Request) {
 			require.Equal(t, "10", req.URL.Query().Get("page[size]"))
 		},
 	)
@@ -188,9 +190,65 @@ func TestAccountsPageSize(t *testing.T) {
 	accounts, err := client.Accounts(WithPageSize(10))
 	require.NoError(t, err)
 	require.Equal(t, expectedResponse, accounts)
-
 }
 
 func TestAccountsError(t *testing.T) {
+	detail := "spilling the tea"
+	expectedResponse := ErrorResponse{
+		Errors: []ErrorObject{
+			{
+				Status: "status",
+				Title:  "title",
+				Detail: detail,
+			},
+		},
+	}
 
+	token := "token"
+	server, client := newServerClientForURL(
+		t,
+		token,
+		"/api/v1/accounts",
+		http.StatusInternalServerError,
+		expectedResponse,
+	)
+	defer server.Close()
+	_, err := client.Accounts()
+	var expectedErr error
+	expectedErr = multierror.Append(expectedErr, errors.New(detail))
+	require.Equal(t, expectedErr, err)
+}
+
+func TestAccountsMultipleError(t *testing.T) {
+	detail1 := "spilling the tea"
+	detail2 := "stirring the pot"
+	expectedResponse := ErrorResponse{
+		Errors: []ErrorObject{
+			{
+				Status: "status",
+				Title:  "title",
+				Detail: detail1,
+			},
+			{
+				Status: "status",
+				Title:  "title",
+				Detail: detail2,
+			},
+		},
+	}
+
+	token := "token"
+	server, client := newServerClientForURL(
+		t,
+		token,
+		"/api/v1/accounts",
+		http.StatusInternalServerError,
+		expectedResponse,
+	)
+	defer server.Close()
+	_, err := client.Accounts()
+	var expectedErr error
+	expectedErr = multierror.Append(expectedErr, errors.New(detail1))
+	expectedErr = multierror.Append(expectedErr, errors.New(detail2))
+	require.Equal(t, expectedErr, err)
 }

@@ -24,7 +24,6 @@ func unmarshal(data []byte, v interface{}) error {
 	return nil
 }
 
-
 var ErrNotImplemented = errors.New("not implemented")
 
 type PingResponseMeta struct {
@@ -255,7 +254,7 @@ func (c *Client) Accounts(options ...accountsOption) (AccountsResponse, error) {
 
 		var err error
 		for _, responseError := range errorResponse.Errors {
-			multierror.Append(
+			err = multierror.Append(
 				err,
 				errors.New(responseError.Detail),
 			)
