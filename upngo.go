@@ -231,7 +231,6 @@ func (c *Client) Transactions(options ...TransactionsOption) (TransactionsRespon
 
 	var transactionsResponse TransactionsResponse
 	if err := unmarshal(responseBody, &transactionsResponse); err != nil {
-		// fmt.Println(string(responseBody))
 		return TransactionsResponse{}, fmt.Errorf("failed to unmarshal get transactions response: %w", err)
 	}
 
