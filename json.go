@@ -1,10 +1,9 @@
 package upngo
 
 import (
-	"encoding/json"
 	"bytes"
+	"encoding/json"
 )
-
 
 // unmarshal is a custom JSON unmarshaller that differs from the standard
 // library's JSON.Unmarshal in that it does not allow unknown fields.

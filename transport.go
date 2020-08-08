@@ -5,7 +5,6 @@ import (
 	"net/http"
 )
 
-
 type addAuthorizationHeaderTransport struct {
 	roundTripper http.RoundTripper
 	token        string
