@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# Lint
+golangci-lint run || exit 1
+
+# Test
+go test -cover -v ./... || exit 1

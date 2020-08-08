@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Setup everything
+
+echo "Linking pre-commit script into git's pre-commit directory..." >/dev/stderr
+ln -s "$(dirname $(realpath $0))/pre-commit" "$(dirname $0)/../.git/hooks/pre-commit" || exit 1
+
+echo "Ensuring go version 1.14 is installed..." >/dev/stderr
+if [ -z "$(command -v go)" ]
+then
+    echo "Go is not installed. Install based on the instructions here: https://golang.org/doc/install..." >/dev/stderr
+    exit 1
+fi
+
+if [[ "$(go version)" != *"1.14"* ]]
+then
+    echo "Go version 1.14 is not installed. Please install it before continuing." >/dev/stderr
+    exit 1
+fi
+
+echo "Ensuring golangci-lint is installed..." >/dev/stderr
+if [ -z "$(command -v golangci-lint)" ]
+then
+    echo "golangci-lint is not installed. Installing now..." >/dev/stderr
+    go get https://github.com/golangci/golangci-lint || exit 1
+    if [ -z "$(command -v golangci-lint)" ]
+    then
+        echo "golangci-lint was installed but is not in your path. Try adding $(go env GOPATH)/bin to your PATH." >/dev/stderr
+        exit 1
+    fi
+fi
+
+echo "Everything looks good :)"
