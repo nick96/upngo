@@ -16,13 +16,6 @@ func abort(msg string, args ...interface{}) {
 	os.Exit(1)
 }
 
-func warn(msg string, args ...interface{}) {
-	if !strings.HasSuffix(msg, "\n") {
-		msg += "\n"
-	}
-	fmt.Fprintf(os.Stderr, msg, args...)
-}
-
 func getToken() string {
 
 	// The token can either be in an env var or a keyring. If someone has
