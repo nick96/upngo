@@ -1,8 +1,6 @@
 package upngo
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -13,71 +11,14 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-// unmarshal is a custom JSON unmarshaller that differs from the standard
-// library's JSON.Unmarshal in that it does not allow unknown fields.
-func unmarshal(data []byte, v interface{}) error {
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(v); err != nil {
-		return err
-	}
-	return nil
-}
-
-var ErrNotImplemented = errors.New("not implemented")
-
-type PingResponseMeta struct {
-	ID          string `json:"id"`
-	StatusEmoji string `json:"statusEmoji"`
-}
-
-type PingResponse struct {
-	Meta PingResponseMeta `json:"meta"`
-}
-
-type ErrorObject struct {
-	Status string `json:"status"`
-	Title  string `json:"title"`
-	Detail string `json:"detail"`
-}
-
-type SourceObject struct {
-	Parameter string `json:"parameter"`
-	Pointer   string `json:"pointer"`
-}
-
-type ErrorResponse struct {
-	Errors []ErrorObject `json:"errors"`
-	Source SourceObject  `json:"source"`
-}
-
-// Account represents an UpBank account.
-type Account struct{}
-
-// Transaction represents an UpBank transaction.
-type Transaction struct{}
-
 type Client struct {
 	token   string
 	baseURL string
 	client  *http.Client
 }
 
-type addAuthorizationHeaderTransport struct {
-	roundTripper http.RoundTripper
-	token        string
-}
-
-func (t *addAuthorizationHeaderTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", t.token))
-	return t.roundTripper.RoundTrip(req)
-}
-
-func newAddAuthorizationHeaderTransport(roundTripper http.RoundTripper, token string) *addAuthorizationHeaderTransport {
-	if roundTripper == nil {
-		roundTripper = http.DefaultTransport
-	}
-	return &addAuthorizationHeaderTransport{roundTripper, token}
+func (c *Client) buildURL(endpoint string) string {
+	return fmt.Sprintf("%s/api/v1/%s", c.baseURL, endpoint)
 }
 
 func NewClient(token string) *Client {
@@ -155,69 +96,9 @@ func WithPageSize(size int) accountsOption {
 		// This is the key in the URL param that dictates the paging size. It's
 		// kind of weird, I've never seen URL params putting stuff in square
 		// brackets before but there you go.
-		name: "page[size]",
-		// Using FormatInt is better than Sprintf because Go knows that we're
-		// converting an _int_ to a string so the parsing of format strings and
-		// stuff isn't required.
-		value: strconv.FormatInt(int64(size), 10),
+		name:  "page[size]",
+		value: strconv.Itoa(size),
 	}
-}
-
-// AccountType represents an enum of the possible account type. Currently that
-// is only saver and transactional but I guess there could potentially be more
-// supported in the future.
-type AccountType string
-
-const (
-	AccountTypeSaver         AccountType = "SAVER"
-	AccountTypeTransactional AccountType = "TRANSACTIONAL"
-)
-
-type MoneyObject struct {
-	CurrencyCode     string `json:"currencyCode"`
-	Value            string `json:"value"`
-	ValueInBaseUnits int64  `json:"valueInBaseUnits"`
-}
-
-type AttributesObject struct {
-	DisplayName string      `json:"displayName"`
-	AccountType AccountType `json:"accountType"`
-	Balance     MoneyObject `json:"balance"`
-	CreatedAt   time.Time   `json:"createdAt"`
-}
-
-type SelfLinkObject struct {
-	Self string `json:"self"`
-}
-
-type TransactionsLinksObject struct {
-	Related string `json:"related"`
-}
-
-type TransactionsObject struct {
-	Links TransactionsLinksObject `json:"links"`
-}
-
-type RelationshipsObject struct {
-	Transactions TransactionsObject `json:"transactions"`
-}
-
-type AccountsResource struct {
-	ID            string              `json:"id"`
-	Type          string              `json:"type"`
-	Attributes    AttributesObject    `json:"attributes"`
-	Links         SelfLinkObject      `json:"links"`
-	Relationships RelationshipsObject `json:"relationships"`
-}
-
-type LinksObject struct {
-	Prev string `json:"prev"`
-	Next string `json:"next"`
-}
-
-type AccountsResponse struct {
-	Data  []AccountsResource `json:"data"`
-	Links LinksObject        `json:"links"`
 }
 
 // Accounts lists all the accounts associated with the authenticated account.
@@ -270,12 +151,85 @@ func (c *Client) Accounts(options ...accountsOption) (AccountsResponse, error) {
 	return accountsResponse, nil
 }
 
-// Transactions lists all the transactions associated with the authenticated
-// account.
-func (c *Client) Transactions() ([]Transaction, error) {
-	return []Transaction{}, ErrNotImplemented
+type transactionsOption struct {
+	name  string
+	value string
 }
 
-func (c *Client) buildURL(endpoint string) string {
-	return fmt.Sprintf("%s/api/v1/%s", c.baseURL, endpoint)
+// TODO: This is a horrible name but otherwise it clashes with the accounts page
+// size option. Anyway, I'm thinking either have to test out whether we can have
+// a base option then alias it for the specific ones but I'm not sure if that
+// will still be typesafe. Alternatively, it might be good, in general, to split
+// out each resoure into a subclient, then they could have different namespaces.
+func WithTransactionPageSize(size int) transactionsOption {
+	return transactionsOption{
+		name:  "page[size]",
+		value: strconv.Itoa(size),
+	}
+}
+
+func WithFilterSince(since time.Time) transactionsOption {
+	return transactionsOption{
+		name:  "filter[since]",
+		value: since.Format(time.RFC3339),
+	}
+}
+
+func WithFilterUntil(until time.Time) transactionsOption {
+	return transactionsOption{
+		name:  "filter[until]",
+		value: until.Format(time.RFC3339),
+	}
+}
+
+// Transactions lists all the transactions associated with the authenticated
+// account.
+func (c *Client) Transactions(options ...transactionsOption) (TransactionsResponse, error) {
+	url := c.buildURL("transactions")
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return TransactionsResponse{}, fmt.Errorf("failed to create transactions request: %w", err)
+	}
+
+	query := req.URL.Query()
+	for _, option := range options {
+		// Using `Add`, not `Set` is important because it meanst that if and
+		// option is supplied twice then both values are included in the query.
+		query.Add(option.name, option.value)
+	}
+	req.URL.RawQuery = query.Encode()
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return TransactionsResponse{}, fmt.Errorf("failed to get transactions: %w", err)
+	}
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return TransactionsResponse{}, fmt.Errorf("failed to read transactions response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		var errorResponse ErrorResponse
+		if err := unmarshal(responseBody, &errorResponse); err != nil {
+			return TransactionsResponse{}, fmt.Errorf("failed to unmarshall get transactions error: %w", err)
+		}
+
+		var err error
+		for _, responseError := range errorResponse.Errors {
+			err = multierror.Append(
+				err,
+				errors.New(responseError.Detail),
+			)
+		}
+		return TransactionsResponse{}, err
+	}
+
+	var transactionsResponse TransactionsResponse
+	if err := unmarshal(responseBody, &transactionsResponse); err != nil {
+		// fmt.Println(string(responseBody))
+		return TransactionsResponse{}, fmt.Errorf("failed to unmarshal get transactions response: %w", err)
+	}
+
+	return transactionsResponse, nil
 }

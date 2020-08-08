@@ -3,11 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"text/tabwriter"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/text/currency"
 
 	"github.com/nick96/upngo"
 )
@@ -32,13 +30,8 @@ var listAccountsCmd = &cobra.Command{
 		for _, account := range accounts.Data {
 			name := account.Attributes.DisplayName
 			typ := account.Attributes.AccountType
-			unit := currency.MustParseISO(account.Attributes.Balance.CurrencyCode)
-			balance, _ := strconv.ParseFloat(account.Attributes.Balance.Value, 64)
-			amount := unit.Amount(balance)
-			fmtdAmount := currency.NarrowSymbol(amount)
-
-
-			fmt.Fprintf(writer, "%s\t%s\t%s\n", name, typ, fmtdAmount)
+			amount := account.Attributes.Balance.Format()
+			fmt.Fprintf(writer, "%s\t%s\t%s\n", name, typ, amount)
 		}
 		writer.Flush()
 	},
@@ -54,7 +47,7 @@ var listTransactionsCmd = &cobra.Command{
 		if err != nil {
 			abort("Failed to get upbank transactions: %v", err)
 		}
-		for _, transaction := range transactions {
+		for _, transaction := range transactions.Data {
 			fmt.Printf("%v\n", transaction)
 		}
 	},
