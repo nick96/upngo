@@ -1,32 +1,6 @@
 version: 2.1
-workflows:
-  main:
-    jobs:
-      - linux
-      - macos
 jobs:
-  macos:
-    macos:
-      xcode: "11.3.0"
-    steps:
-      - checkout
-      - run:
-          name: Install go
-          command: |
-            brew install go@1.14
-      - run:
-          name: Install golangci-lint
-          command: |
-            brew install golangci/tap/golangci-lint
-            golangci-lint version
-      - run:
-          name: Lint
-          command: golangci-lint run
-      - run:
-          name: Test
-          command: go test -v ./...
-
-  linux:
+  build:
     docker:
       - image: circleci/golang:1.14
     steps:
