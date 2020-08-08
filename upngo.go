@@ -44,6 +44,7 @@ func (c *Client) Ping() error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	// Read the body out here because in either case (error or happy), we're
 	// going to want the body. The only different will be in the structure we
@@ -74,7 +75,7 @@ func (c *Client) Ping() error {
 	return nil
 }
 
-// accountsOption represents an option (URL param) for the Accounts endpoint.
+// AccountsOption represents an option (URL param) for the Accounts endpoint.
 //
 // This type isn't exposed so we instead expose constructors to build it with
 // the given values. Once it gets to the point that this struct is constructed,
@@ -85,14 +86,14 @@ func (c *Client) Ping() error {
 // For constructors, the `name` should be the key in the URL param and `value`
 // should be the value, i.e. options will be formatted as `<name>=<value>` in
 // the URL.
-type accountsOption struct {
+type AccountsOption struct {
 	name  string
 	value string
 }
 
 // WithPageSize specifies that the API should return `size` number of accounts.
-func WithPageSize(size int) accountsOption {
-	return accountsOption{
+func WithPageSize(size int) AccountsOption {
+	return AccountsOption{
 		// This is the key in the URL param that dictates the paging size. It's
 		// kind of weird, I've never seen URL params putting stuff in square
 		// brackets before but there you go.
@@ -102,7 +103,7 @@ func WithPageSize(size int) accountsOption {
 }
 
 // Accounts lists all the accounts associated with the authenticated account.
-func (c *Client) Accounts(options ...accountsOption) (AccountsResponse, error) {
+func (c *Client) Accounts(options ...AccountsOption) (AccountsResponse, error) {
 	url := c.buildURL("accounts")
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -121,6 +122,7 @@ func (c *Client) Accounts(options ...accountsOption) (AccountsResponse, error) {
 	if err != nil {
 		return AccountsResponse{}, fmt.Errorf("failed to get accounts: %w", err)
 	}
+	resp.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -151,7 +153,8 @@ func (c *Client) Accounts(options ...accountsOption) (AccountsResponse, error) {
 	return accountsResponse, nil
 }
 
-type transactionsOption struct {
+// TransactionsOption is an option for the transactions API.
+type TransactionsOption struct {
 	name  string
 	value string
 }
@@ -161,22 +164,22 @@ type transactionsOption struct {
 // a base option then alias it for the specific ones but I'm not sure if that
 // will still be typesafe. Alternatively, it might be good, in general, to split
 // out each resoure into a subclient, then they could have different namespaces.
-func WithTransactionPageSize(size int) transactionsOption {
-	return transactionsOption{
+func WithTransactionPageSize(size int) TransactionsOption {
+	return TransactionsOption{
 		name:  "page[size]",
 		value: strconv.Itoa(size),
 	}
 }
 
-func WithFilterSince(since time.Time) transactionsOption {
-	return transactionsOption{
+func WithFilterSince(since time.Time) TransactionsOption {
+	return TransactionsOption{
 		name:  "filter[since]",
 		value: since.Format(time.RFC3339),
 	}
 }
 
-func WithFilterUntil(until time.Time) transactionsOption {
-	return transactionsOption{
+func WithFilterUntil(until time.Time) TransactionsOption {
+	return TransactionsOption{
 		name:  "filter[until]",
 		value: until.Format(time.RFC3339),
 	}
@@ -184,7 +187,7 @@ func WithFilterUntil(until time.Time) transactionsOption {
 
 // Transactions lists all the transactions associated with the authenticated
 // account.
-func (c *Client) Transactions(options ...transactionsOption) (TransactionsResponse, error) {
+func (c *Client) Transactions(options ...TransactionsOption) (TransactionsResponse, error) {
 	url := c.buildURL("transactions")
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
@@ -203,6 +206,7 @@ func (c *Client) Transactions(options ...transactionsOption) (TransactionsRespon
 	if err != nil {
 		return TransactionsResponse{}, fmt.Errorf("failed to get transactions: %w", err)
 	}
+	defer resp.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
