@@ -1,0 +1,44 @@
+[run]
+# This isn't a big project so linting should be fast.
+timeout = "10s"
+# We want to hold tests up to the same standards of quality.
+tests = true
+
+[linters]
+enable = [
+       # The defaults
+       "govet",
+       "errcheck",
+       "staticcheck",
+       "unused",
+       "gosimple",
+       "structcheck",
+       "varcheck",
+       "ineffassign",
+       "deadcode",
+       "typecheck",
+
+       # Make sure we close HTTP requests as a core part of this tool is
+       # utilising HTTP APIs.
+       "bodyclose",
+       # Use good go style, as defined by the Go authors.
+       "golint",
+       # Lets make sure we're using good spelling in out comments.
+       "misspell",
+       # Ugh.
+       "whitespace",
+       # Make sure we've got exhaustive switches on enums.
+       "exhaustive",
+       # Make sure there's no hard coded credentials and other unsafe stuff.
+       "gosec",
+       # Make sure things are nicely formatted, including imports.
+       "goimports",
+       # Go's meant to keep things simple. Lets enforce that.
+       "gocyclo",
+]
+
+[linters-settings]
+    [[gocyclo]]
+    # Lets keep things simple. This project isn't that complicated. If it
+    # becomes a problem, we can make a decision then.
+    min-complexity = 10
