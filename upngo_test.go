@@ -11,6 +11,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/text/currency"
 )
 
 func newServerClientForURL(
@@ -247,6 +248,263 @@ func TestAccountsMultipleError(t *testing.T) {
 	)
 	defer server.Close()
 	_, err := client.Accounts()
+	var expectedErr error
+	expectedErr = multierror.Append(expectedErr, errors.New(detail1))
+	expectedErr = multierror.Append(expectedErr, errors.New(detail2))
+	require.Equal(t, expectedErr, err)
+}
+
+func TestTransactionsNoPageSize(t *testing.T) {
+	expectedResponse := TransactionsResponse{
+		Data: []TransactionResource{
+			{
+				Resource: Resource{
+					ID:   "id",
+					Type: "transactions",
+					Links: SelfLinkObject{
+						Self: "https:/blahblablah",
+					},
+				},
+				Attributes: TransactionAttributes{
+					Description: "description",
+					Status:      TransactionStatusHeld,
+					RawText:     "raw text",
+					Message:     "message",
+					HoldInfo: HoldInfoObject{
+						Amount: MoneyObject{
+							CurrencyCode:     currency.AUD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+						ForeignAmount: MoneyObject{
+							CurrencyCode:     currency.CAD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+					},
+					RoundUp: RoundUpObject{
+						Amount: MoneyObject{
+							CurrencyCode:     currency.AUD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+						BoostPortion: MoneyObject{
+							CurrencyCode:     currency.AUD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+					},
+					Cashback: CashbackObject{
+						Description: "description",
+						Amount: MoneyObject{
+							CurrencyCode:     currency.AUD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+					},
+					Amount: MoneyObject{
+						CurrencyCode:     currency.AUD.String(),
+						Value:            "1.00",
+						ValueInBaseUnits: 100,
+					},
+					ForeignAmount: MoneyObject{
+						CurrencyCode:     currency.CAD.String(),
+						Value:            "1.00",
+						ValueInBaseUnits: 100,
+					},
+					SettledAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.UTC),
+					CreatedAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.UTC),
+				},
+				Relationships: TransactionRelationshipsObject{
+					Account: AccountObject{
+						Links: RelatedLinksObject{
+							Related: "https://blahblahblah",
+						},
+						Data: DataObject{
+							Type: "type",
+							ID:   "id",
+						},
+					},
+					Tags: TagObject{
+						Links: SelfLinkObject{
+							Self: "https://blahblahblah",
+						},
+					},
+				},
+			},
+		},
+		Links: LinksObject{},
+	}
+	token := "token"
+	server, client := newServerClientForURL(
+		t,
+		token,
+		"/api/v1/transactions",
+		http.StatusOK,
+		expectedResponse,
+		func(req *http.Request) {
+			require.Empty(t, req.URL.Query().Get("page[size]"))
+		},
+	)
+	defer server.Close()
+	transactions, err := client.Transactions()
+	require.NoError(t, err)
+	require.Equal(t, expectedResponse, transactions)
+}
+
+func TestTransactionsPageSize(t *testing.T) {
+	expectedResponse := TransactionsResponse{
+		Data: []TransactionResource{
+			{
+				Resource: Resource{
+					ID:   "id",
+					Type: "transactions",
+					Links: SelfLinkObject{
+						Self: "https:/blahblablah",
+					},
+				},
+				Attributes: TransactionAttributes{
+					Description: "description",
+					Status:      TransactionStatusHeld,
+					RawText:     "raw text",
+					Message:     "message",
+					HoldInfo: HoldInfoObject{
+						Amount: MoneyObject{
+							CurrencyCode:     currency.AUD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+						ForeignAmount: MoneyObject{
+							CurrencyCode:     currency.CAD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+					},
+					RoundUp: RoundUpObject{
+						Amount: MoneyObject{
+							CurrencyCode:     currency.AUD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+						BoostPortion: MoneyObject{
+							CurrencyCode:     currency.AUD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+					},
+					Cashback: CashbackObject{
+						Description: "description",
+						Amount: MoneyObject{
+							CurrencyCode:     currency.AUD.String(),
+							Value:            "1.00",
+							ValueInBaseUnits: 100,
+						},
+					},
+					Amount: MoneyObject{
+						CurrencyCode:     currency.AUD.String(),
+						Value:            "1.00",
+						ValueInBaseUnits: 100,
+					},
+					ForeignAmount: MoneyObject{
+						CurrencyCode:     currency.CAD.String(),
+						Value:            "1.00",
+						ValueInBaseUnits: 100,
+					},
+					SettledAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.UTC),
+					CreatedAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.UTC),
+				},
+				Relationships: TransactionRelationshipsObject{
+					Account: AccountObject{
+						Links: RelatedLinksObject{
+							Related: "https://blahblahblah",
+						},
+						Data: DataObject{
+							Type: "type",
+							ID:   "id",
+						},
+					},
+					Tags: TagObject{
+						Links: SelfLinkObject{
+							Self: "https://blahblahblah",
+						},
+					},
+				},
+			},
+		},
+		Links: LinksObject{},
+	}
+	token := "token"
+	server, client := newServerClientForURL(
+		t,
+		token,
+		"/api/v1/transactions",
+		http.StatusOK,
+		expectedResponse,
+		func(req *http.Request) {
+			require.Equal(t, req.URL.Query().Get("page[size]"), "10")
+		},
+	)
+	defer server.Close()
+	transactions, err := client.Transactions(WithTransactionPageSize(10))
+	require.NoError(t, err)
+	require.Equal(t, expectedResponse, transactions)
+}
+
+func TestTransactionsError(t *testing.T) {
+	detail := "spilling the tea"
+	expectedResponse := ErrorResponse{
+		Errors: []ErrorObject{
+			{
+				Status: "status",
+				Title:  "title",
+				Detail: detail,
+			},
+		},
+	}
+
+	token := "token"
+	server, client := newServerClientForURL(
+		t,
+		token,
+		"/api/v1/transactions",
+		http.StatusInternalServerError,
+		expectedResponse,
+	)
+	defer server.Close()
+	_, err := client.Transactions()
+	var expectedErr error
+	expectedErr = multierror.Append(expectedErr, errors.New(detail))
+	require.Equal(t, expectedErr, err)
+}
+
+func TestTransactionsMultipleError(t *testing.T) {
+	detail1 := "spilling the tea"
+	detail2 := "stirring the pot"
+	expectedResponse := ErrorResponse{
+		Errors: []ErrorObject{
+			{
+				Status: "status",
+				Title:  "title",
+				Detail: detail1,
+			},
+			{
+				Status: "status",
+				Title:  "title",
+				Detail: detail2,
+			},
+		},
+	}
+
+	token := "token"
+	server, client := newServerClientForURL(
+		t,
+		token,
+		"/api/v1/transactions",
+		http.StatusInternalServerError,
+		expectedResponse,
+	)
+	defer server.Close()
+	_, err := client.Transactions()
 	var expectedErr error
 	expectedErr = multierror.Append(expectedErr, errors.New(detail1))
 	expectedErr = multierror.Append(expectedErr, errors.New(detail2))
