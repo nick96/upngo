@@ -29,10 +29,11 @@ var listAccountsCmd = &cobra.Command{
 		}
 		writer := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 		for _, account := range accounts.Data {
+			id := account.ID
 			name := account.Attributes.DisplayName
 			typ := account.Attributes.AccountType
 			amount := account.Attributes.Balance.Format()
-			fmt.Fprintf(writer, "%s\t%s\t%s\n", name, typ, amount)
+			fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", name, typ, amount, id)
 		}
 		writer.Flush()
 	},
@@ -51,11 +52,12 @@ var listTransactionsCmd = &cobra.Command{
 
 		writer := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 		for _, transaction := range transactions.Data {
+			id := transaction.ID
 			desc := transaction.Attributes.Description
 			msg := transaction.Attributes.Message
 			amount := transaction.Attributes.Amount.Format()
 			date := transaction.Attributes.CreatedAt.Format(time.RFC1123)
-			fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", desc, msg, amount, date)
+			fmt.Fprintf(writer, "%s\t%s\t%s\t%s\t%s\n", desc, msg, amount, date, id)
 		}
 		writer.Flush()
 	},
