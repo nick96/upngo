@@ -5,7 +5,6 @@ workflows:
     jobs:
       - test-go1.14
       - test-go1.13
-      - test-go1.12
 
 jobs:
   test-go1.14: &test-template
@@ -32,7 +31,3 @@ jobs:
     <<: *test-template
     docker:
       - image: circleci/golang:1.13
-  test-go1.12:
-    <<: *test-template
-    docker:
-      - image: circleci/golang:1.12
