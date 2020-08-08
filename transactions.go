@@ -23,8 +23,16 @@ type AccountObject struct {
 	Data  DataObject         `json:"data"`
 }
 
+// TagObject is an undocumented part of the transactions response. I'm not sure
+// what `Data` contains as I've only seen it as empty so far. We shall see!
+type TagObject struct {
+	Data  []interface{}  `json:"data"`
+	Links SelfLinkObject `json:"links"`
+}
+
 type TransactionRelationshipsObject struct {
 	Account AccountObject `json:"account"`
+	Tags    TagObject     `json:"tags"`
 }
 
 type Resource struct {
