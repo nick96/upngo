@@ -104,7 +104,7 @@ func TestAccountsNoPageSize(t *testing.T) {
 						Value:            "1.00",
 						ValueInBaseUnits: 100,
 					},
-					CreatedAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.Local),
+					CreatedAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.UTC),
 				},
 				Links: SelfLinkObject{
 					Self: "https://blahblahblah",
@@ -155,7 +155,7 @@ func TestAccountsPageSize(t *testing.T) {
 						Value:            "1.00",
 						ValueInBaseUnits: 100,
 					},
-					CreatedAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.Local),
+					CreatedAt: time.Date(2020, 8, 2, 15, 20, 22, 100, time.UTC),
 				},
 				Links: SelfLinkObject{
 					Self: "https://blahblahblah",
