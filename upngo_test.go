@@ -93,7 +93,7 @@ func TestPingErr(t *testing.T) {
 
 func TestAccountsNoPageSize(t *testing.T) {
 	expectedResponse := AccountsResponse{
-		Data: []AccountsResource{
+		Data: []AccountResource{
 			{
 				ID:   "id",
 				Type: "accounts",
@@ -144,7 +144,7 @@ func TestAccountsNoPageSize(t *testing.T) {
 
 func TestAccountsPageSize(t *testing.T) {
 	expectedResponse := AccountsResponse{
-		Data: []AccountsResource{
+		Data: []AccountResource{
 			{
 				ID:   "id",
 				Type: "accounts",

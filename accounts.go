@@ -55,7 +55,7 @@ type RelationshipsObject struct {
 	Transactions TransactionsObject `json:"transactions"`
 }
 
-type AccountsResource struct {
+type AccountResource struct {
 	ID            string              `json:"id"`
 	Type          string              `json:"type"`
 	Attributes    AttributesObject    `json:"attributes"`
@@ -69,6 +69,11 @@ type LinksObject struct {
 }
 
 type AccountsResponse struct {
-	Data  []AccountsResource `json:"data"`
-	Links LinksObject        `json:"links"`
+	Data  []AccountResource `json:"data"`
+	Links LinksObject       `json:"links"`
+}
+
+// AccountResponse represents a response from the account endpoint.
+type AccountResponse struct {
+	Data AccountResource `json:"data"`
 }
