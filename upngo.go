@@ -122,7 +122,7 @@ func (c *Client) Accounts(options ...AccountsOption) (AccountsResponse, error) {
 	if err != nil {
 		return AccountsResponse{}, fmt.Errorf("failed to get accounts: %w", err)
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
 	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
