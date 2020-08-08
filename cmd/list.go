@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -47,9 +48,16 @@ var listTransactionsCmd = &cobra.Command{
 		if err != nil {
 			abort("Failed to get upbank transactions: %v", err)
 		}
+
+		writer := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
 		for _, transaction := range transactions.Data {
-			fmt.Printf("%v\n", transaction)
+			desc := transaction.Attributes.Description
+			msg := transaction.Attributes.Message
+			amount := transaction.Attributes.Amount.Format()
+			date := transaction.Attributes.CreatedAt.Format(time.RFC1123)
+			fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", desc, msg, amount, date)
 		}
+		writer.Flush()
 	},
 }
 
