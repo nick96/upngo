@@ -1,6 +1,14 @@
-version: 2.1
+version: 2
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test-go1.14
+      - test-go1.13
+      - test-go1.12
+
 jobs:
-  build:
+  test-go1.14: &test-template
     docker:
       - image: circleci/golang:1.14
     steps:
@@ -16,3 +24,11 @@ jobs:
       - run:
           name: Test
           command: go test -cover -v ./...
+  test-go1.13:
+    <<: *test-template
+    docker:
+      - image: circleci/golang:1.13
+  test-go1.12:
+    <<: *test-template
+    docker:
+      - image: circleci/golang:1.12
