@@ -35,6 +35,8 @@ enable = [
        "goimports",
        # Go's meant to keep things simple. Lets enforce that.
        "gocyclo",
+       # Stop the silly but easy mistake of using pointers in loops.
+       "exportloopref",
 ]
 
 [linters-settings]
