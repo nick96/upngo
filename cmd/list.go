@@ -55,6 +55,9 @@ var listTransactionsCmd = &cobra.Command{
 			id := transaction.ID
 			desc := transaction.Attributes.Description
 			msg := transaction.Attributes.Message
+			if msg == "" {
+				msg = "N/A"
+			}
 			amount := transaction.Attributes.Amount.Format()
 			date := transaction.Attributes.CreatedAt.Format(time.RFC1123)
 			fmt.Fprintf(writer, "%s\t%s\t%s\t%s\t%s\n", desc, msg, amount, date, id)

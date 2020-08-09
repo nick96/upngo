@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -17,7 +18,8 @@ type Client struct {
 	client  *http.Client
 }
 
-func (c *Client) buildURL(endpoint string) string {
+func (c *Client) buildURL(parts ...string) string {
+	endpoint := strings.Join(parts, "/")
 	return fmt.Sprintf("%s/api/v1/%s", c.baseURL, endpoint)
 }
 
@@ -253,7 +255,7 @@ func unmarshalToErr(response []byte) error {
 
 // Account retrieves an account by its ID.
 func (c *Client) Account(id string) (AccountResponse, error) {
-	url := c.buildURL(fmt.Sprintf("accounts/%s", id))
+	url := c.buildURL("accounts", id)
 	resp, err := c.client.Get(url)
 	if err != nil {
 		return AccountResponse{}, fmt.Errorf("failed to send get account by ID request: %w", err)
@@ -276,4 +278,31 @@ func (c *Client) Account(id string) (AccountResponse, error) {
 	}
 
 	return accountResponse, nil
+}
+
+// Transaction retrieves a transaction by its ID.
+func (c *Client) Transaction(id string) (TransactionResponse, error) {
+	url := c.buildURL("transactions", id)
+	resp, err := c.client.Get(url)
+	if err != nil {
+		return TransactionResponse{}, fmt.Errorf("failed to send get transaction by ID request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return TransactionResponse{}, fmt.Errorf("failed to read get transaction by ID response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = unmarshalToErr(responseBody)
+		return TransactionResponse{}, err
+	}
+
+	var transactionResponse TransactionResponse
+	if err := unmarshal(responseBody, &transactionResponse); err != nil {
+		return TransactionResponse{}, fmt.Errorf("failed to unmarshal get transaction by ID response: %w", err)
+	}
+
+	return transactionResponse, nil
 }

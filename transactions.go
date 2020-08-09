@@ -80,3 +80,8 @@ type TransactionsResponse struct {
 	Data  []TransactionResource `json:"data"`
 	Links LinksObject           `json:"links"`
 }
+
+type TransactionResponse struct {
+	Data  TransactionResource `json:"data"`
+	Links LinksObject         `json:"links"`
+}
