@@ -1,6 +1,8 @@
 package upngo
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +12,11 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-multierror"
+)
+
+const (
+	MaxWebhookURLLength         = 64
+	MaxWebhookDescriptionLength = 300
 )
 
 type Client struct {
@@ -334,4 +341,98 @@ func (c *Client) Webhooks() (WebhooksResponse, error) {
 		return WebhooksResponse{}, fmt.Errorf("failed to unmarshal webhooks response: %w", err)
 	}
 	return webhooksResponse, nil
+}
+
+type RegisterWebhookOption struct {
+	name  string
+	value string
+}
+
+func WithDescription(desc string) RegisterWebhookOption {
+	return RegisterWebhookOption{
+		name:  "description",
+		value: desc,
+	}
+}
+
+// RegisterWebhook registers a webhook for the given URL.
+func (c *Client) RegisterWebhook(webhookURL string, opts ...RegisterWebhookOption) (WebhookResponse, error) {
+	url := c.buildURL("webhooks")
+	var description string
+	for _, opt := range opts {
+		if opt.name == "description" {
+			description = opt.value
+		}
+	}
+
+	if len(webhookURL) > MaxWebhookURLLength {
+		return WebhookResponse{}, fmt.Errorf("webhook URL too long. Max length is %d", MaxWebhookURLLength)
+	}
+
+	if len(description) > MaxWebhookDescriptionLength {
+		return WebhookResponse{}, fmt.Errorf("webhook description too long. Max length is %d", MaxWebhookDescriptionLength)
+	}
+
+	input := RegisterWebhookRequest{
+		Data: WebhookInputResource{
+			Attributes: WebhookInputResourceAttributes{
+				URL:         webhookURL,
+				Description: description,
+			},
+		},
+	}
+	requestBody, err := json.Marshal(input)
+	if err != nil {
+		// Something's really goofed up here.
+		return WebhookResponse{}, fmt.Errorf("failed to marshal request body (this should never happen): %w", err)
+	}
+
+	resp, err := c.client.Post(url, "application/json", bytes.NewBuffer(requestBody))
+	if err != nil {
+		return WebhookResponse{}, fmt.Errorf("request to register webhook failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return WebhookResponse{}, fmt.Errorf("failed to read register webhook response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		fmt.Println(string(responseBody))
+		err = unmarshalToErr(responseBody)
+		return WebhookResponse{}, err
+	}
+
+	var webhookResponse WebhookResponse
+	if err := unmarshal(responseBody, &webhookResponse); err != nil {
+		return WebhookResponse{}, fmt.Errorf("failed to unmarshall register webhook response body: %w", err)
+	}
+
+	return webhookResponse, nil
+}
+
+func (c Client) PingWebhook(id string) (WebhookPingResponse, error) {
+	url := c.buildURL("webhooks", id, "ping")
+	resp, err := c.client.Post(url, "application/json", nil)
+	if err != nil {
+		return WebhookPingResponse{}, fmt.Errorf("failed to send ping request to webhook: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return WebhookPingResponse{}, fmt.Errorf("failed to read webhook ping response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		err = unmarshalToErr(responseBody)
+		return WebhookPingResponse{}, err
+	}
+
+	var webhookPingResponse WebhookPingResponse
+	if err := unmarshal(responseBody, &webhookPingResponse); err != nil {
+		return WebhookPingResponse{}, fmt.Errorf("failed to unmarshal webhook ping response: %w", err)
+	}
+	return webhookPingResponse, nil
 }

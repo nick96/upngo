@@ -21,6 +21,22 @@ var pingCmd = &cobra.Command{
 	},
 }
 
+var pingWebhookCmd = &cobra.Command{
+	Use:   "webhook [ID]",
+	Short: "Ping UpBank webhook by ID.",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		token := getToken()
+		client := upngo.NewClient(token)
+		id := args[0]
+		if _, err := client.PingWebhook(id); err != nil {
+			abort("Webhook ping failed: %v", err)
+		}
+		fmt.Printf("Successfully pinged webhook ⚡\n")
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(pingCmd)
+	pingCmd.AddCommand(pingWebhookCmd)
 }
