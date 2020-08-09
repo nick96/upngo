@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/99designs/keyring v1.1.5
+	github.com/aws/aws-lambda-go v1.19.0
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/kr/text v0.2.0 // indirect
