@@ -7,9 +7,9 @@ CLI and library for working with [UpBank](https://up.com.au) via its
 
 - [x] Ping
 - [x] List accounts
-- [ ] List transactions
-- [ ] Get specific account
-- [ ] Get specific transaction
+- [x] List transactions
+- [x] Get specific account
+- [x] Get specific transaction
 - [ ] Get webhooks
 - [ ] Create webhooks
 - [ ] Get speific webhook
