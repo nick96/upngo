@@ -306,3 +306,29 @@ func (c *Client) Transaction(id string) (TransactionResponse, error) {
 
 	return transactionResponse, nil
 }
+
+// Webhooks gets all the webhooks.
+func (c *Client) Webhooks() (WebhooksResponse, error) {
+	url := c.buildURL("webhooks")
+	resp, err := c.client.Get(url)
+	if err != nil {
+		return WebhooksResponse{}, fmt.Errorf("failed to send get webhooks request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return WebhooksResponse{}, fmt.Errorf("failed to read get webhooks response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = unmarshalToErr(responseBody)
+		return WebhooksResponse{}, err
+	}
+
+	var webhooksResponse WebhooksResponse
+	if err := unmarshal(responseBody, &webhooksResponse); err != nil {
+		return WebhooksResponse{}, fmt.Errorf("failed to unmarshal webhooks response: %w", err)
+	}
+	return webhooksResponse, nil
+}

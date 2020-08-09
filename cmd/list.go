@@ -66,7 +66,34 @@ var listTransactionsCmd = &cobra.Command{
 	},
 }
 
+var listWebhooksCmd = &cobra.Command{
+	Use:   "webhooks",
+	Short: "List webhooks",
+	Run: func(cmd *cobra.Command, args []string) {
+		token := getToken()
+		client := upngo.NewClient(token)
+		webhooks, err := client.Webhooks()
+		if err != nil {
+			abort("Failed to get upbank webhooks: %v", err)
+		}
+
+		if len(webhooks.Data) == 0 {
+			abort("No webhooks registered. Register some to get automating! 🤖")
+		}
+
+		writer := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+		for _, webhook := range webhooks.Data {
+			id := webhook.ID
+			url := webhook.Attributes.URL
+			desc := webhook.Attributes.Description
+			createdAt := webhook.Attributes.CreatedAt.Format(time.RFC1123)
+			fmt.Fprintf(writer, "%s\t%s\t%s\t%s\n", url, desc, createdAt, id)
+		}
+		writer.Flush()
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(listCmd)
-	listCmd.AddCommand(listAccountsCmd, listTransactionsCmd)
+	listCmd.AddCommand(listAccountsCmd, listTransactionsCmd, listWebhooksCmd)
 }
