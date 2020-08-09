@@ -236,3 +236,44 @@ func (c *Client) Transactions(options ...TransactionsOption) (TransactionsRespon
 
 	return transactionsResponse, nil
 }
+
+func unmarshalToErr(response []byte) error {
+	var errorResponse ErrorResponse
+	if err := unmarshal(response, &errorResponse); err != nil {
+		return fmt.Errorf("failed to unmarshal error response: %w", err)
+	}
+
+	var err error
+	for _, responseError := range errorResponse.Errors {
+		err = multierror.Append(err, errors.New(responseError.Detail))
+	}
+
+	return err
+}
+
+// Account retrieves an account by its ID.
+func (c *Client) Account(id string) (AccountResponse, error) {
+	url := c.buildURL(fmt.Sprintf("accounts/%s", id))
+	resp, err := c.client.Get(url)
+	if err != nil {
+		return AccountResponse{}, fmt.Errorf("failed to send get account by ID request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	responseBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return AccountResponse{}, fmt.Errorf("failed to read get account by ID response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		err = unmarshalToErr(responseBody)
+		return AccountResponse{}, err
+	}
+
+	var accountResponse AccountResponse
+	if err := unmarshal(responseBody, &accountResponse); err != nil {
+		return AccountResponse{}, fmt.Errorf("failed to unmarshal get account by ID response: %w", err)
+	}
+
+	return accountResponse, nil
+}
