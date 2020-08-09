@@ -2,6 +2,7 @@ package upngo
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -20,4 +21,25 @@ func newAddAuthorizationHeaderTransport(roundTripper http.RoundTripper, token st
 		roundTripper = http.DefaultTransport
 	}
 	return &addAuthorizationHeaderTransport{roundTripper, token}
+}
+
+type logTransport struct {
+	rt http.RoundTripper
+}
+
+func (t *logTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	log.Printf("--> %s %s", req.Method, req.URL.String())
+	resp, err := t.rt.RoundTrip(req)
+	if err != nil {
+		return resp, err
+	}
+	log.Printf("<-- %s %s", resp.Status, resp.Request.URL)
+	return resp, err
+}
+
+func newLogTransport(rt http.RoundTripper) *logTransport {
+	if rt == nil {
+		rt = http.DefaultTransport
+	}
+	return &logTransport{rt}
 }

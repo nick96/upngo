@@ -25,7 +25,10 @@ func (c *Client) buildURL(parts ...string) string {
 
 func NewClient(token string) *Client {
 	httpClient := http.DefaultClient
-	httpClient.Transport = newAddAuthorizationHeaderTransport(httpClient.Transport, token)
+	var transport http.RoundTripper
+	transport = newAddAuthorizationHeaderTransport(httpClient.Transport, token)
+	transport = newLogTransport(transport)
+	httpClient.Transport = transport
 
 	return &Client{
 		token:   token,
