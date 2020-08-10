@@ -25,6 +25,29 @@ CLI and library for working with [UpBank](https://up.com.au) via its
 The CLI lets you do anything you can do via the library or API it just provides
 a nice CLI wrapper.
 
+``` sh
+$ upngo help
+Talk to your bank from the CLI!
+
+Usage:
+  upngo [command]
+
+Available Commands:
+  add         A brief description of your command
+  completion  Generate completion script
+  get         Get accounts or transactions.
+  help        Help about any command
+  init        Initialise the UpBank CLI for ease of use by adding the token to your keyring.
+  list        List accounts or transactions
+  ping        Ping UpBank. Useful to test your token is correct.
+
+Flags:
+  -h, --help      help for upngo
+  -v, --verbose   Verbose logging
+
+Use "upngo [command] --help" for more information about a command.
+```
+
 ### Completion
 
 You can generate completions for `upgngoctl` with:
